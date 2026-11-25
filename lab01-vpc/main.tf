@@ -1,5 +1,13 @@
 # 1. Provider: le dice a Terraform con qué nube hablar y en qué región
 terraform {
+  backend "s3" {
+    bucket       = "tfstate-989925973894"
+    key          = "lab01-vpc/terraform.tfstate"
+    region       = "us-east-2"
+    use_lockfile = true
+    encrypt      = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
