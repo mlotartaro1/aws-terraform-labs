@@ -1,0 +1,61 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ["lab01-vpc/**"]
+
+permissions:
+  id-token: write        # necesario para OIDC
+  contents: read         # leer el código
+  pull-requests: write   # comentar el plan en el PR
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab01-vpc
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v5
+
+      - name: Autenticarse en AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.1"
+
+      - name: Verificar formato
+        run: terraform fmt -check
+
+      - name: Init
+        run: terraform init -input=false
+
+      - name: Validar sintaxis
+        run: terraform validate
+
+      - name: Plan
+        id: plan
+        run: terraform plan -no-color -input=false
+
+      - name: Publicar el plan en el PR
+        uses: actions/github-script@v8
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          script: |
+            const plan = process.env.PLAN.slice(0, 60000);
+            const body = "### Terraform Plan - lab01-vpc\n```\n" + plan + "\n```";
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
