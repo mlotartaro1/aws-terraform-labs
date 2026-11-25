@@ -12,9 +12,9 @@ provider "aws" {
 }
 
 variable "github_repo" {
-  description = "Repo de GitHub autorizado a usar el rol (usuario/repo)"
+  description = "Repo autorizado, con IDs inmutables (usuario@id/repo@id)"
   type        = string
-  default     = "mlotartaro1/aws-terraform-labs"
+  default     = "mlotartaro1@145944008/aws-terraform-labs@1469528066"
 }
 
 # Para obtener el número de cuenta automáticamente
