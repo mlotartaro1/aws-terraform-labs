@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths: ["lab01-vpc/**"]
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -22,6 +23,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+
+      - name: Debug - ver claims del token OIDC
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
+            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+            core.info(`sub: ${payload.sub}`);
+            core.info(`aud: ${payload.aud}`);
+            core.info(`repository: ${payload.repository}`);
 
       - uses: aws-actions/configure-aws-credentials@v5
         with:
