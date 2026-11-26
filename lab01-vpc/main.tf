@@ -24,7 +24,7 @@ provider "aws" {
 #    Formato: resource "<tipo>" "<nombre_local>"
 resource "aws_vpc" "lab" {
   cidr_block = "10.10.0.0/16"
-  tags       = { Name = "lab01-vpc-test" }
+  tags       = { Name = "lab01-vpc" }
 }
 
 resource "aws_subnet" "publica" {
@@ -33,6 +33,19 @@ resource "aws_subnet" "publica" {
   availability_zone       = "us-east-2a"
   map_public_ip_on_launch = true
   tags                    = { Name = "lab01-subnet-publica" }
+}
+
+resource "aws_subnet" "publica_b" {
+  vpc_id                  = aws_vpc.lab.id
+  cidr_block              = "10.10.3.0/24"
+  availability_zone       = "us-east-2b"
+  map_public_ip_on_launch = true
+  tags                    = { Name = "lab01-subnet-publica-b" }
+}
+
+resource "aws_route_table_association" "publica_b" {
+  subnet_id      = aws_subnet.publica_b.id
+  route_table_id = aws_route_table.publica.id
 }
 
 resource "aws_internet_gateway" "igw" {
