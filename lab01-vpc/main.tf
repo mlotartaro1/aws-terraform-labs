@@ -23,13 +23,13 @@ provider "aws" {
 # 2. Resource: cada bloque es un recurso a crear
 #    Formato: resource "<tipo>" "<nombre_local>"
 resource "aws_vpc" "lab" {
-  cidr_block = "10.10.0.0/16"
-  tags       = { Name = "lab01-vpc" }
+  cidr_block = "10.255.0.0/16"
+  tags       = { Name = "lab01-vpc-test" }
 }
 
 resource "aws_subnet" "publica" {
   vpc_id                  = aws_vpc.lab.id # referencia a la VPC de arriba
-  cidr_block              = "10.10.2.0/24"
+  cidr_block              = "10.255.1.0/24"
   availability_zone       = "us-east-2a"
   map_public_ip_on_launch = true
   tags                    = { Name = "lab01-subnet-publica" }
@@ -37,7 +37,7 @@ resource "aws_subnet" "publica" {
 
 resource "aws_subnet" "publica_b" {
   vpc_id                  = aws_vpc.lab.id
-  cidr_block              = "10.10.3.0/24"
+  cidr_block              = "10.255.2.0/24"
   availability_zone       = "us-east-2b"
   map_public_ip_on_launch = true
   tags                    = { Name = "lab01-subnet-publica-b" }
