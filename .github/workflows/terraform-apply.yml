@@ -1,17 +1,26 @@
 name: Terraform Apply
+run-name: Apply ${{ inputs.lab || 'lab01-vpc' }}
 
 on:
   push:
     branches: [main]
     paths: ["lab01-vpc/**"]
   workflow_dispatch:
+    inputs:
+      lab:
+        description: "Lab a desplegar"
+        required: true
+        type: choice
+        options:
+          - lab01-vpc
+          - lab02-web
 
 permissions:
   id-token: write
   contents: read
 
 concurrency:
-  group: terraform-lab01
+  group: terraform-${{ inputs.lab || 'lab01-vpc' }}
   cancel-in-progress: false
 
 jobs:
@@ -19,20 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: lab01-vpc
+        working-directory: ${{ inputs.lab || 'lab01-vpc' }}
 
     steps:
       - uses: actions/checkout@v5
-
-      - name: Debug - ver claims del token OIDC
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const token = await core.getIDToken('sts.amazonaws.com');
-            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-            core.info(`sub: ${payload.sub}`);
-            core.info(`aud: ${payload.aud}`);
-            core.info(`repository: ${payload.repository}`);
 
       - uses: aws-actions/configure-aws-credentials@v5
         with:
