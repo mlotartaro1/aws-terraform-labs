@@ -1,4 +1,12 @@
 terraform {
+  backend "s3" {
+    bucket       = "tfstate-989925973894"
+    key          = "lab02-web/terraform.tfstate"
+    region       = "us-east-2"
+    use_lockfile = true
+    encrypt      = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -14,7 +22,7 @@ provider "aws" {
 # ---------- RED (igual que el lab01) ----------
 resource "aws_vpc" "lab" {
   cidr_block = "10.10.0.0/16"
-  tags = { Name = "lab02-vpc" }
+  tags       = { Name = "lab02-vpc" }
 }
 
 resource "aws_subnet" "publica" {
@@ -22,7 +30,7 @@ resource "aws_subnet" "publica" {
   cidr_block              = "10.10.1.0/24"
   availability_zone       = "us-east-2a"
   map_public_ip_on_launch = true
-  tags = { Name = "lab02-subnet-publica" }
+  tags                    = { Name = "lab02-subnet-publica" }
 }
 
 resource "aws_internet_gateway" "igw" {

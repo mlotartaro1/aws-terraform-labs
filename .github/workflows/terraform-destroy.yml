@@ -1,8 +1,16 @@
 name: Terraform Destroy
+run-name: Destroy ${{ inputs.lab }}
 
 on:
   workflow_dispatch:
     inputs:
+      lab:
+        description: "Lab a destruir"
+        required: true
+        type: choice
+        options:
+          - lab01-vpc
+          - lab02-web
       confirmar:
         description: "Escribi destroy para confirmar"
         required: true
@@ -13,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: terraform-lab01
+  group: terraform-${{ inputs.lab }}
   cancel-in-progress: false
 
 jobs:
@@ -22,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: lab01-vpc
+        working-directory: ${{ inputs.lab }}
 
     steps:
       - uses: actions/checkout@v5

@@ -3,32 +3,58 @@ name: Terraform Plan
 on:
   pull_request:
     branches: [main]
-    paths: ["lab01-vpc/**"]
+    paths: ["lab*/**"]
 
 permissions:
-  id-token: write        # necesario para OIDC
-  contents: read         # leer el código
-  pull-requests: write   # comentar el plan en el PR
+  id-token: write
+  contents: read
+  pull-requests: write
 
 jobs:
-  plan:
+  detectar:
     runs-on: ubuntu-latest
+    outputs:
+      labs: ${{ steps.labs.outputs.labs }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detectar labs modificados (con backend S3)
+        id: labs
+        run: |
+          cambiados=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | cut -d/ -f1 | sort -u)
+          labs=()
+          for d in $cambiados; do
+            if [[ "$d" == lab* ]] && grep -qs 'backend "s3"' "$d"/*.tf; then
+              labs+=("$d")
+            fi
+          done
+          json=$(printf '%s\n' "${labs[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "Labs a planificar: $json"
+          echo "labs=$json" >> "$GITHUB_OUTPUT"
+
+  plan:
+    needs: detectar
+    if: needs.detectar.outputs.labs != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lab: ${{ fromJSON(needs.detectar.outputs.labs) }}
     defaults:
       run:
-        working-directory: lab01-vpc
+        working-directory: ${{ matrix.lab }}
 
     steps:
-      - name: Descargar el código
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Autenticarse en AWS (OIDC)
-        uses: aws-actions/configure-aws-credentials@v5
+      - uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: us-east-2
 
-      - name: Instalar Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.17.1"
 
@@ -49,10 +75,11 @@ jobs:
         uses: actions/github-script@v8
         env:
           PLAN: ${{ steps.plan.outputs.stdout }}
+          LAB: ${{ matrix.lab }}
         with:
           script: |
             const plan = process.env.PLAN.slice(0, 60000);
-            const body = "### Terraform Plan - lab01-vpc\n```\n" + plan + "\n```";
+            const body = "### Terraform Plan - " + process.env.LAB + "\n```\n" + plan + "\n```";
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
