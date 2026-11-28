@@ -21,13 +21,13 @@ provider "aws" {
 
 # ---------- RED (igual que el lab01) ----------
 resource "aws_vpc" "lab" {
-  cidr_block = "10.10.0.0/16"
+  cidr_block = "10.255.0.0/16"
   tags       = { Name = "lab02-vpc" }
 }
 
 resource "aws_subnet" "publica" {
   vpc_id                  = aws_vpc.lab.id
-  cidr_block              = "10.10.1.0/24"
+  cidr_block              = "10.255.1.0/24"
   availability_zone       = "us-east-2a"
   map_public_ip_on_launch = true
   tags                    = { Name = "lab02-subnet-publica" }
@@ -59,9 +59,9 @@ resource "aws_security_group" "web" {
   vpc_id      = aws_vpc.lab.id
 
   ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
+    description = "HTTPS"
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -94,10 +94,16 @@ resource "aws_instance" "web" {
   subnet_id              = aws_subnet.publica.id
   vpc_security_group_ids = [aws_security_group.web.id]
 
+  user_data_replace_on_change = true
+
   user_data = <<-EOF
     #!/bin/bash
-    dnf install -y httpd
-    echo "<h1>Hola Jose! Este servidor lo creaste con Terraform</h1><p>Host: $(hostname -f)</p>" > /var/www/html/index.html
+    dnf install -y httpd mod_ssl
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout /etc/pki/tls/private/localhost.key \
+      -out /etc/pki/tls/certs/localhost.crt \
+      -subj "/CN=lab02"
+    echo "<h1>Hola Jose! Servidor HTTPS creado con Terraform</h1><p>Host: $(hostname -f)</p>" > /var/www/html/index.html
     systemctl enable --now httpd
   EOF
 
@@ -105,5 +111,5 @@ resource "aws_instance" "web" {
 }
 
 output "url" {
-  value = "http://${aws_instance.web.public_ip}"
+  value = "https://${aws_instance.web.public_ip}"
 }
